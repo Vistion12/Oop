@@ -6,14 +6,25 @@ use Vistion\Oop\Core\Db;
 
 class User extends Model
 {
-    public ?int $id;
-    public ?string $name;
-    protected array $props=[
-        'id'=>false,
-        'name'=>true,
+    protected ?int $id;
+    protected ?string $name;
 
+    protected array $props = [
+        'id' => false,
+        'name' => false,
     ];
-    protected static function getTableName(): string
+
+    public static function getName()
+    {
+        return $_SESSION['login'] ?? false;
+    }
+
+    public static function isAdmin(): bool
+    {
+        return $_SESSION['login'] === 'admin';
+    }
+
+    protected static function getTableName():string
     {
         return 'users';
     }

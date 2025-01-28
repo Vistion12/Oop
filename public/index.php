@@ -1,10 +1,29 @@
 <?php
+session_start();
 
-use Vistion\Oop\Controllers\PostsController;
-use Vistion\Oop\Model\Category;
-use Vistion\Oop\Model\Post;
-use Vistion\Oop\Model\Role;
+
+use Vistion\Oop\Core\Render;
+
 include __DIR__ . "/../vendor/autoload.php";
+
+
+$controllerName = $_GET["c"] ?? 'posts';
+$actionName = $_GET["a"] ?? 'index';
+
+$controllerClass = "Vistion\\Oop\\Controllers\\"  . ucfirst($controllerName) . "Controller";;
+try {
+
+if (class_exists($controllerClass)) {
+    $controller = new $controllerClass(new Render());
+    $controller->runAction($actionName);
+} else {
+    echo "Нет такого контроллера";
+}
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+
+
 
 
 // этот блок кода для проверки метода UPDATE
@@ -30,19 +49,7 @@ include __DIR__ . "/../vendor/autoload.php";
 
 
 
-$controllerName = $_GET["c"] ?? 'posts';
-$actionName = $_GET["a"] ?? 'index';
 
-$controllerClass = "Vistion\\Oop\\Controllers\\"  . ucfirst($controllerName) . "Controller";;
-
-
-if (class_exists($controllerClass)) {
-    $controller = new $controllerClass();
-    $controller->runAction($actionName);
-} else {
-    echo "Нет такого контроллера";
-}
-DIE();
 
 
 

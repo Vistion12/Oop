@@ -3,55 +3,85 @@
 namespace Vistion\Oop\Controllers;
 
 use Vistion\Oop\Model\Post;
+use Vistion\Oop\Model\User;
 
-class PostsController
+class PostsController extends Controller
 {
-    public function runAction($action)
-    {
-        $method = "action" . ucfirst($action);
-        if (method_exists($this, $method)) {
-            $this->$method();
-        } else {
-            echo "404 нет такого Action";
-        }
-
-    }
-
     public function actionIndex()
     {
-        $posts = Post::getAll();
 
-        echo $this->renderTemplate('index', [
-            'posts' => $posts
-        ]);
-    }
-
-    public function actionPost()
-    {
-        // Получаем ID из параметров URL
-        $id = (int)$_GET['id'];
-
-        // Ищем пост с таким ID в базе данных
-        $post = Post::getOne($id);
-
-        // Если пост не найден, показываем ошибку
-        if (!$post) {
-            echo "Пост не найден!";
-            return;
+        if (isset($_COOKIE['visit_count'])) {
+            $visitCount = $_COOKIE['visit_count'] + 1;
+        } else {
+            $visitCount = 1;
         }
 
-        // Отображаем шаблон с данными поста
-        echo $this->renderTemplate('post', [
-            'title' => $post->title,
-            'text' => $post->text
+        setcookie('visit_count', $visitCount, time() + 3600 * 24 * 30, '/');
+
+        $posts = Post::getAll();
+
+
+        $message = $_SESSION['message'] ?? null;
+        $_SESSION['message'] = null;
+
+
+        echo $this->render('posts/index', [
+            'posts' => $posts,
+            'message' => $message,
+            'visitCount' => $visitCount  // передаем счетчик посещений
         ]);
     }
 
-    public function renderTemplate($template, $params = []): string
+    public function actionSave()
     {
-        ob_clean();
-        extract($params);
-        include '../src/views/' . $template . ".php";
-        return ob_get_clean();
+        $title = $_POST['title'];
+        $text = $_POST['text'];
+
+        $_SESSION['message'] = null;
+
+        if (empty($title)) {
+            $_SESSION['message'] = "Title is required";
+            header('Location: /posts');
+            exit;
+        }
+
+
+        $post = new Post($title, $text);
+        $post->save();
+
+
+        $_SESSION['message'] = "Post saved";
+        header('Location: /posts');
+
     }
+
+    public function actionDelete()
+    {
+        if (!User::isAdmin()) {
+            $_SESSION['message'] = "Вы не админ!";
+            header('Location: /posts');
+            exit();
+        }
+
+
+        $id = $_GET['id'];
+        $post = Post::getOne($id);
+        $post->delete();
+        $_SESSION['message'] = "Пост удален";
+        header('Location: /posts');
+    }
+
+    public function actionShow()
+    {
+
+        $id = (int)$_GET['id'];
+        $post = Post::getOne($id);
+
+        echo $this->render('posts/post', [
+            'post' => $post
+        ]);
+    }
+
+
+
 }

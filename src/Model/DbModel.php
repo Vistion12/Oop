@@ -8,85 +8,82 @@ use Vistion\Oop\interfaces\IModel;
 abstract class DbModel implements IModel
 {
     abstract static protected function getTableName(): string;
-    public static function getOne(int $id) :static
+
+    public static function getOne(int $id)
     {
         $table = static::getTableName();
-        $sql = "SELECT * FROM $table WHERE id = :id" . PHP_EOL;
-        return Db::getInstance()->queryOneObject($sql,['id' => $id],static::class);
+        $sql = "SELECT * FROM $table WHERE id = :id";
+        return Db::getInstance()->queryOneObject($sql, ['id' => $id], static::class);
     }
 
-    public static function getAll(): array
+
+    public static function getAll()
     {
         $table = static::getTableName();
-        $sql = "SELECT * FROM $table" . PHP_EOL;
+        $sql = "SELECT * FROM $table ORDER BY id DESC";
         return Db::getInstance()->queryAll($sql);
     }
 
-    public function query()
+    public function insert()
     {
-        return $this;
-    }
-    public function insert(): static
-    {
-        $table = static::getTableName();
+        $params = [];
         $columns = [];
-        $values = [];
 
-        foreach ($this as $key => $value) {
-            if ($key != 'id') {
-                $columns[] = $key;
-                $values[] = $value;
-            }
+        foreach ($this->props as $key => $value) {
+            $params[":" . $key] = $this->$key;
+            $columns[] = $key;
         }
 
-        $columnsList = implode(',', $columns);
-        $placeholders = implode(',', array_fill(0, count($values), '?'));
-        $sql = "INSERT INTO $table ($columnsList) VALUES ($placeholders)";
+        $columns = implode(', ', $columns);
+        $values = implode(', ', array_keys($params));
 
-        Db::getInstance()->execute($sql, $values);
 
+        $tableName = static::getTableName();
+
+        $sql = "INSERT INTO `{$tableName}`($columns) VALUES ($values)";
+
+
+        Db::getInstance()->execute($sql, $params);
         $this->id = Db::getInstance()->lastInsertId();
-
         return $this;
     }
 
-    public function update(): static
+    public function update()
     {
-        $table = static::getTableName();
-        $columns = [];
-        $values = [];
+        $params = [];
+        $colums = [];
 
-        // Собираем имена полей и их значения, чтобы построить запрос UPDATE
-        foreach ($this as $key => $value) {
-            // Проверяем, разрешено ли это поле для обновления
-            if ($key != 'id' && isset($this->props[$key]) && $this->props[$key] === true && isset($value)) {
-                $columns[] = "$key = ?";
-                $values[] = $value;
-            }
+        $tableName = static::getTableName();
+
+        foreach ($this->props as $key => $value) {
+            if (!$value) continue;
+            $params["{$key}"] = $this->$key;
+            $colums[] .= "`{$key}` = :{$key}";
+            $this->props[$key] = false;
         }
+        $colums = implode(", ", $colums);
+        $params['id'] = $this->id;
 
-        // Если нет данных для обновления, выходим
-        if (empty($columns)) {
-            throw new \Exception("Нет данных для обновления.");
-        }
+        $sql = "UPDATE `{$tableName}` SET {$colums} WHERE `id` = :id";
 
-        $columnsList = implode(', ', $columns);
-        $sql = "UPDATE $table SET $columnsList WHERE id = ?";
-
-        // Добавляем значение id в конец списка значений
-        $values[] = $this->id;
-
-        // Выполняем запрос
-        Db::getInstance()->execute($sql, $values);
-
-        return $this;  // Возвращаем текущий объект для цепочек вызовов
+        Db::getInstance()->execute($sql, $params);
+        return $this;
     }
 
-
-    public function where(string $column, string $value)
+    public function delete()
     {
+        $tableName = static::getTableName();
+        $sql = "DELETE FROM $tableName WHERE id = :id";
+        return Db::getInstance()->execute($sql, ['id' => $this->id]);
+    }
 
-        $this->whereClause = "WHERE {$column} = '{$value}'";
+    public function save()
+    {
+        if (is_null($this->id)) {
+            $this->insert();
+        } else {
+            $this->update();
+        }
         return $this;
     }
 }

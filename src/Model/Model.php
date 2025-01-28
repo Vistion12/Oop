@@ -5,21 +5,24 @@ namespace Vistion\Oop\Model;
 
 abstract class Model extends DbModel
 {
-    public function __get(string $name)
+    protected array $props = [];
+
+    public function __get(string $name): mixed
     {
-        // Проверяем, можно ли читать это поле
-        if (!isset($this->props[$name]) || !$this->props[$name]) {
-            throw new \Exception("Чтение поля '$name' запрещено.");
+        if (array_key_exists($name, $this->props)) {
+            return $this->$name;
         }
-        return $this->$name;
+        throw new \Exception("Нет такого поля");
+
     }
+
     public function __set(string $name, $value): void
     {
-        // Проверяем, можно ли записывать в это поле
-        if (!isset($this->props[$name]) || !$this->props[$name]) {
-            throw new \Exception("Запись в поле '$name' запрещена.");
+        if (array_key_exists($name, $this->props)) {
+            $this->props[$name] = true;
+            $this->$name = $value;
         }
-        $this->$name = $value;
+
     }
 
 }
