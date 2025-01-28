@@ -1,0 +1,17 @@
+{
+    "name": "vistion/oop",
+    "autoload": {
+        "psr-4": {
+            "Vistion\\Oop\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Vistion",
+            "email": "n89190245729@gmail.com"
+        }
+    ],
+    "require": {
+        "ext-pdo": "*"
+    }
+}
